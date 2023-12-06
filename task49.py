@@ -19,6 +19,7 @@ from dataclasses import dataclass
 import os
 
 KEYS = ("name", "surname", "lastname", "phone_number")
+FILE_NAME = "phones.txt"
 
 
 class MyInt:
@@ -48,6 +49,9 @@ class Contact:
 
     def __setitem__(self, item, value):
         setattr(self, item, value)
+
+    def __getitem__(self, item):
+        return getattr(self, item)
 
     def __str__(self) -> str:
         return (
@@ -92,7 +96,11 @@ class ExportPhoneBook:
         self.format_data = format_data
 
     def export_to_file(self):
-        with open(self.file_name, "w", encoding="utf-8") as file:
+        flag = 'w'
+        if os.path.exists(FILE_NAME):
+            flag = 'a'
+
+        with open(self.file_name, flag, encoding="utf-8") as file:
             print(self.phone_book.contacts)
             lst = [contact.values() for contact in self.phone_book.contacts]
             data = self.format_data(lst)
@@ -119,12 +127,15 @@ def manual_input(lst: PhoneBook = None) -> PhoneBook:
         lst = lst.contacts
     phone_book = PhoneBook(lst)
     while (input_string := input("Ваш ввод:")) != "quit":
-        phone_book.contacts.append(Contact(*input_string.split()))
+        try:
+            phone_book.contacts.append(Contact(*input_string.split()))
+        except TypeError:
+            print("Ошибочный ввод")
     return phone_book
 
 
 def import_phone(lst=None) -> PhoneBook:
-    import_from_txt = ImportPhoneBook("phones.txt").import_from_file()
+    import_from_txt = ImportPhoneBook(FILE_NAME).import_from_file()
     # print(import_from_txt)
     import_from_txt = [
         Contact(*contact.strip().split(",")) for contact in import_from_txt
@@ -140,7 +151,7 @@ def search_contact(phone_book: PhoneBook) -> None:
 
 
 def export_phones(phone_book: PhoneBook) -> None:
-    ExportPhoneBook("phones.txt", phone_book, FormatData()).export_to_file()
+    ExportPhoneBook(FILE_NAME, phone_book, FormatData()).export_to_file()
 
 
 def show_contacts(phone_book: PhoneBook, pause: bool = True) -> None:
@@ -158,7 +169,7 @@ def edit_contact(phone_book: PhoneBook) -> None:
     print(*KEYS, sep="\n")
     field = input("Введите поле, которое хотите изменить: ")
     if field in KEYS:
-        input_string = input(f"Введите новое значение для {field}: ")
+        input_string = input(f"Введите новое значение для {phone_book.contacts[index.value][field]}: ")
         phone_book.contacts[index.value][field] = input_string
         show_contacts(phone_book)
     else:
